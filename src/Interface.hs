@@ -1,10 +1,19 @@
+-- | Интерфейс игры
 module Interface where
 
+import Graphics.Gloss.Interface.Pure.Game
+import Graphics.Gloss.Juicy 
+import Game.Player
+import Game.Bonus
+import Game.Obstacle
 import Type
 import Const
-import Graphics.Gloss.Interface.Pure.Game
-import Graphics.Gloss.Juicy
-  
+import Game.Universe
+
+------------------------------------------------------
+-- * Отрисовка игровой вселенной и ее интерфейса
+------------------------------------------------------
+
 -- | Загрузка изображений
 loadImages :: IO Images
 loadImages = do
@@ -38,7 +47,7 @@ loadImages = do
     , imageBadBirdDown       = scale 1.0 1.0 badBirdDownPicture
     , imageSkyWithGrass      = scale 1.0 1.0 skyWithGrassPicture
     , imageGameOver          = scale 1.0 1.0 gameOver
-    , imageDonut             = scale 1.0 1.0 donutPicture
+    , imageDonut             = scale 0.1 0.1 donutPicture
     , imageDonutStar         = scale 0.1 0.1 donutStarPicture
     , imageFasterStar        = scale 0.1 0.1 fasterStarPicture
     , imageInvincibleStar    = scale 0.1 0.1 invincibleStarPicture
@@ -50,8 +59,6 @@ loadImages = do
     , imageStone             = scale 0.05 0.05 stonePicture
     }
 
-
--- | Отрисовка игровой вселенной
 -- | Отобразить игровую вселенную
 drawUniverse :: Images -> Universe -> Picture
 drawUniverse images universe = pictures
@@ -61,27 +68,8 @@ drawUniverse images universe = pictures
   , drawScore (universeScore universe)
   , drawLife (universeLife universe)
   , drawGameOver (imageGameOver images) (universeGameOver universe)
-  , drawBoss (imageBoss images) (bossActivity (universeBoss universe)) (universeBoss universe)
-  , drawBossTitle (imageBossTitle images) (bossActivity (universeBoss universe))
+  , drawDonuts images (cowBonus $ universeCow universe)
   ]
-
--- | Отобразить одну картинку фона
-drawBackgroundPicture :: Picture -> BackgroundPicture -> Picture
-drawBackgroundPicture image backgroundPicture = translate x y (scale 1.0 1.0 image)
-  where
-    (x, y) = backgroundPicturePosition backgroundPicture
-
--- | Отобразить фон
-drawBackground :: Picture -> Background -> Picture
-drawBackground image background = pictures (map
-              (drawBackgroundPicture image)
-    (cropBackgroundInsideScreen (mapBackgroundPicture background)))
-
--- drawBackground :: Picture -> Background -> Picture
--- drawBackground image background = translate (-w) h (scale 1.0 1.0 image)
---   where
---     w = fromIntegral screenWidth  / 2
---     h = fromIntegral screenHeight / 2
 
 -- | Отобразить все препятствия игровой вселенной, вмещающихся в экран
 drawObstacles :: Images -> Map -> Picture
@@ -100,29 +88,46 @@ drawObstacles images obstacles = pictures
     (cropInsideScreen (mapStones obstacles)))
   ]
 
+-- | Отобразить одну картинку фона
+drawBackgroundPicture :: Picture -> BackgroundPicture -> Picture
+drawBackgroundPicture image backgroundPicture = 
+  translate x y (scale 1.0 1.0 image)
+  where
+    (x, y) = backgroundPicturePosition backgroundPicture
+
+-- | Отобразить фон
+drawBackground :: Picture -> Background -> Picture
+drawBackground image background = pictures 
+  (map (drawBackgroundPicture image)
+  (cropBackgroundInsideScreen (mapBackgroundPicture background)))
+
 -- | Нарисовать корову
 drawCow :: Images -> Cow -> Picture
 drawCow images cow = case cowBonus cow of
-  NoBonus -> translate x y (rotate (cowAngel cow) (scale r r (imageCow images)))
-    where
-      (x, y) = cowPosition cow
-      r = cowSize cow
-  BirdSpeedChangeBonus _ -> translate x y (rotate (cowAngel cow) (scale r r (imageCow images)))
-    where
-      (x, y) = cowPosition cow
-      r = cowSize cow
-  InvincibleBonus _ -> drawCowWithBonus images cow (cowBonus cow)
-  CowSizeChangeBonus _ -> drawCowWithBonus images cow (cowBonus cow)
-
--- uncurry :: (a -> b -> c) -> (a, b) ->
-drawCowWithBonus :: Images -> Cow -> Bonus -> Picture
-drawCowWithBonus images cow (InvincibleBonus _)
-  = translate (fst (cowPosition cow)) (snd (cowPosition cow)) (rotate (cowAngel cow) (scale (cowSize cow) (cowSize cow) (imageCowBlurred images)))
-drawCowWithBonus images cow (CowSizeChangeBonus i)
-  = translate (fst (cowPosition cow)) (snd (cowPosition cow)) (rotate (cowAngel cow) (scale newCowSize newCowSize (imageCow images)))
+  BirdSpeedChangeBonus _ -> translate x y 
+    (rotate (cowAngel cow) (scale r r (imageCow images)))
+  InvincibleBonus _      -> drawCowWithBonus images cow (cowBonus cow)
+  CowSizeChangeBonus _   -> drawCowWithBonus images cow (cowBonus cow)
+  _                      -> translate x y 
+    (rotate (cowAngel cow) (scale r r (imageCow images)))
   where
-    newCowSize = (cowSize cow) * (sizeMultiplier i)
-drawCowWithBonus images cow _  = drawCow images cow
+    (x, y) = cowPosition cow
+    r = cowSize cow
+
+-- | Нарисовать корову, учитывая бонус
+drawCowWithBonus :: Images -> Cow -> Bonus -> Picture
+drawCowWithBonus images cow (InvincibleBonus _)    = translate x y 
+  (rotate (cowAngel cow) (scale r r (imageCowBlurred images)))
+  where 
+    (x, y)     = cowPosition cow
+    r          = cowSize cow
+drawCowWithBonus images cow (CowSizeChangeBonus i) = translate x y 
+  (rotate (cowAngel cow) (scale newCowSize newCowSize (imageCow images)))
+  where
+    (x, y)     = cowPosition cow
+    r          = cowSize cow
+    newCowSize = r * (sizeMultiplier i)
+drawCowWithBonus images cow _                      = drawCow images cow
  
 
 -- | Нарисовать счёт в левом верхнем углу экрана
@@ -141,51 +146,43 @@ drawLife life = translate w h (scale 30 30 (pictures
     w = fromIntegral screenWidth  / 2
     h = fromIntegral screenHeight / 2
 
--- | Нарисовать препятствие
-draw :: Obstacle o => Picture -> o -> Picture
-draw image o = translate x y (scale r r image)
-  where
-    (x, y) = getPosition o
-    r = getSize o
-
-drawBonusItem :: Images -> BonusItem -> BonusType -> Picture
-drawBonusItem i bi Inv = draw (imageInvincibleStar i) bi
-drawBonusItem i bi SizeChange = draw (imageEnlargeStar i) bi
-drawBonusItem i bi BirdSpeed = draw (imageFasterStar i) bi
-
+-- | Нарисовать надпись конца игры
 drawGameOver :: Picture -> Bool -> Picture
 drawGameOver _ False = blank
 drawGameOver image True = translate (-w) h (scale 1.0 1.0 image)
   where
     w = 0
     h = screenTop / 2
-
-
-drawBoss :: Picture -> Int -> Boss -> Picture
-drawBoss image activity boss
-  | activity > 0 = translate x y image
-  | otherwise = blank
-  where
-    (x, y) = bossPosition boss
-
-
-drawBossTitle :: Picture -> Int -> Picture
-drawBossTitle image activity
-  | activity > -bossTitleTimer && activity < 0 || activity > bossTimer - bossTitleTimer = translate 0 (screenTop * 0.8) image
-  | otherwise = blank
-
-
--- | Оставить только те препятствия, которые входят в экран
-cropInsideScreen :: (Obstacle o) => [o] -> [o]
-cropInsideScreen obs = dropWhile (\o -> pos o < screenLeft) $
-  takeWhile (\o -> pos o < screenRight) obs
-  where
-    pos = fst . getPosition
     
+-- | Нарисовать Бонус
+drawBonusItem :: Images     -- ^ Картинки
+              -> BonusItem  -- ^ Обьект бонуса
+              -> BonusType  -- ^ Тип бонуса
+              -> Picture
+drawBonusItem i bi _ 
+  | hidden bi                 = draw (imageRandomStar i) bi
+drawBonusItem i bi Inv        = draw (imageInvincibleStar i) bi
+drawBonusItem i bi SizeChange = draw (imageEnlargeStar i) bi
+drawBonusItem i bi BirdSpeed  = draw (imageFasterStar i) bi
+drawBonusItem i bi Gun        = draw (imageDonutStar i) bi
+
+-- | Нарисовать пончики от пончикового бластера
+drawDonuts :: Images -> Bonus -> Picture
+drawDonuts images (DonutGunBonus dgb) = 
+  pictures (map (draw (imageDonut images)) (allDonuts dgb))
+drawDonuts _ _                        = blank
+
+-- | Нарисовать препятствие
+draw :: Obstacle o => Picture -> o -> Picture
+draw image o = translate x y (scale r r image)
+  where
+    (x, y) = getPosition o
+    r = getSize o
     
 -- | Оставить только те картинки фона, которые входят в экран
 cropBackgroundInsideScreen :: [BackgroundPicture] -> [BackgroundPicture]
-cropBackgroundInsideScreen background = dropWhile (\o -> pos o < screenLeft) $
+cropBackgroundInsideScreen background = 
+  dropWhile (\o -> pos o < screenLeft) $
   takeWhile (\o -> pos o < screenRight) background
   where
     pos = fst . backgroundPicturePosition

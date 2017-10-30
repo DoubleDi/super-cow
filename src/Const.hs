@@ -1,8 +1,12 @@
+-- | Основные константы
 module Const where
 
 import Type
- 
--- | Константы, параметры игры
+
+-----------------------------------------
+-- * Константы, общие параметры игры
+-----------------------------------------
+
 -- | Экран
 -- | Ширина экрана
 screenWidth :: Int
@@ -28,64 +32,22 @@ screenTop = fromIntegral screenHeight / 2
 screenBottom :: Height
 screenBottom = - fromIntegral screenHeight / 2
 
--- | Препятствия
--- | Размер клевера
-defaultCloverSize :: Size
-defaultCloverSize = 1.0
-
--- | Размер плохой птички
-defaultBadBirdSize :: Size
-defaultBadBirdSize = 1.0
-
--- | Размер хорошей птички
-defaultGoodBirdSize :: Size
-defaultGoodBirdSize = 1.0
-
-defaultBonusItemSize :: Size
-defaultBonusItemSize = 1.0
-
--- | Диапазон высот препятствий.
-obstacleHeightRange :: (Height, Height)
-obstacleHeightRange = (screenBottom, screenTop)
-
-typeRange :: (Int, Int)
-typeRange = (1, 3)
-
--- | Расстояние между препятствиями
-defaultOffset :: Offset
-defaultOffset = screenRight * 1.5
-
--- | Диапазон, для вариации расстояния между препятсвтиями
-obstacleOffsetRange :: (Offset, Offset)
-obstacleOffsetRange = (-(defaultOffset / 2), defaultOffset / 2)
-
 -- | Скорость фона
 backgroundSpeed:: Speed
 backgroundSpeed = 20
 
-backgroundPictureSizeWidth :: Float
+-- | Размер фона
+backgroundPictureSizeWidth :: Offset
 backgroundPictureSizeWidth = 5000
 
--- | Скорость игры
 -- | Изначальная скорость движения игрока по вселенной - абсолютное изменение
 gameSpeed :: Speed
 gameSpeed = 100
 
-originSpeedGoodBird :: Speed
-originSpeedGoodBird = 100
-
-originSpeedBadBird :: Speed
-originSpeedBadBird = 200
-
-originSpeedClover :: Speed
-originSpeedClover = 10
-
-originSpeedBonusItem :: Speed
-originSpeedBonusItem = 150
-
 -- | Величина ускорения игры
 speedIncrease :: Speed
 speedIncrease = 0.1
+<<<<<<< HEAD
 
 -- | Корова
 -- | Размер коровы
@@ -157,3 +119,5 @@ stoneSpeed = 120
 
 stoneAppearenceTime :: Int
 stoneAppearenceTime = 600
+=======
+>>>>>>> LevelGeneration

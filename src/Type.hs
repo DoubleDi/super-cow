@@ -1,153 +1,63 @@
+-- | Основные типы данных
 module Type where
 
 import Graphics.Gloss.Interface.Pure.Game
-  
--- | Структуры данных
--- | Высота и Положение объектов
-type Height   = Float            -- ^ Высота обьекта
-type Offset   = Float            -- ^ Сдвиг обьекта
-type Position = (Offset,Height)  -- ^ Координаты обьекта
-type Life     = Int              -- ^ Жизни (изначально 3)
-type Score    = Int              -- ^ Счет (изменяется постоянно)
-type Size     = Float            -- ^ Размер обьекта
-type Speed    = Float            -- ^ Скорость обьекта
-  
--- | Объекты игровой вселенной
--- | Клевер - добавляет одну жизнь
-data Clover = Clover
-  { cloverPosition :: Position
-  , cloverSize     :: Size
+
+--------------------------------------------------
+-- * Основные общие типы, используемые в игре
+--------------------------------------------------
+
+-- | Высота (координата Х)
+type Height   = Float     
+
+-- | Ширина (Координата Y)
+type Offset   = Float 
+
+-- | Координаты обьекта в пространстве
+type Position = (Offset,Height)
+
+-- | Жизни
+type Life     = Int              
+
+-- | Счет
+type Score    = Int              
+
+-- | Размер
+type Size     = Float            
+
+-- | Скорость
+type Speed    = Float            
+
+-- | Картинка заднего фона
+data BackgroundPicture = BackgroundPicture 
+  { backgroundPicturePosition :: Position -- ^ Положение картинки 
   }
 
--- | Плохая птичка - снимает 2 жизни
-data BadBird = BadBird
-  { badBirdPosition :: Position
-  , badBirdSize     :: Size
-  }
-
--- | Хорошая птичка - снимает 1 жизни
-data GoodBird = GoodBird
-  { goodBirdPosition :: Position
-  , goodBirdSize     :: Size
-  }
-
-data BonusItem = BonusItem
-  { bonusItemPosition :: Position
-  , bonusItemSize     :: Size
-  , bonusItemType     :: BonusType
-  }
-
-data Donut = Donut
-  { donutPosition :: Position
-  , donutSize     :: Size
-  }
-
-data Bomb = Bomb
-  { bombPosition :: Position
-  , bombSize     :: Size
-  }
-
-data Stone = Stone
-  { stonePosition :: Position
-  , stoneSize     :: Size
-  }
-
--- | Карта препятствий
-data Map = Map
-  { mapGoodBirds  :: [GoodBird]
-  , mapBadBirds   :: [BadBird]
-  , mapClovers    :: [Clover]
-  , mapBonusItems :: [BonusItem]
-  , mapBombs      :: [Bomb]
-  , mapStones     :: [Stone]
-  , obstacleSpeedGoodBird :: Speed
-  , obstacleSpeedBadBird :: Speed
-  , obstacleSpeedClover :: Speed
-  , obstacleSpeedBonusItem :: Speed
-  }
-
-data BackgroundPicture = BackgroundPicture
-  { backgroundPicturePosition :: Position
-  -- , backgroundPictureSize :: Size
-  }
-
+-- | Фон
 data Background = Background
-  { mapBackgroundPicture :: [BackgroundPicture]
-  , backgroundPictureSpeed :: Speed
+  { mapBackgroundPicture   :: [BackgroundPicture] -- ^ Множество картинок, составляющих фон
+  , backgroundPictureSpeed :: Speed               -- ^ Скорость движения фона
   }
 
--- | Корова
-data Cow = Cow
-  { cowPosition  :: Position
-  , cowSize      :: Size
-  , cowSpeedUp   :: Speed  -- ^ Cкорость по вертикали
-  , cowSpeedLeft :: Speed  -- ^ Cкорость по горизонтали
-  , cowAngel     :: Float  -- ^ Угол наклона
-  , cowSpeedAngel :: Float
-  , cowPushed    :: Int
-  , cowBonus     :: Bonus
+-- | Босс
+data Boss = Boss    
+  { bossHealth   :: Life   -- ^ Жизни 
+  , bossDamage   :: Float  -- ^ Урон
+  , bossHardness :: Float  -- ^ Сложность
   }
 
-data CowSizeChange = CowSizeChange
-  { sizeMultiplier    :: Size
-  , sizeChangeTime :: Float
-  } deriving Eq
+-- | Режим игры
+data Mode = BossMode Boss       -- ^ Режим Босса
+          | NightmareMode Float -- ^ Режим без бонусов и клеверов
+          | OrdinaryMode Float  -- ^ Обычный режим
+          | NoBonusMode Float   -- ^ Режим без бонусов
 
-data BirdSpeedChange = BirdSpeedChange
-  { goodBirdSpeedMultiplier :: Float
-  , badBirdSpeedMultiplier :: Float
-  , cloverSpeedMultiplier :: Float
-  , bonusSpeedMultiplier :: Float
-  , birdSpeedChangetime :: Float
-  } deriving Eq
-
-data DonutGun = DonutGun
-  { donutSpeed :: Speed
-  , allDonuts :: [Donut]
-  , donutGuntime :: Float
-  , timeBetweenDonuts :: Float
-  , damage :: Float
-  }
-
-data Invincible = Invincible
-  { invincibleTime :: Float
-  , invincibleLife :: Life
-  } deriving Eq
-
-data Mode = NightmareMode Float | OrdinaryMode Float
-
-data BonusType = Inv | SizeChange | BirdSpeed
-
-data Bonus = InvincibleBonus Invincible
-  | CowSizeChangeBonus CowSizeChange
-  | BirdSpeedChangeBonus BirdSpeedChange
-  | NoBonus
-  deriving Eq
-
-data Boss = Boss
-  { bossPosition :: Position
-  , bossActivity :: Int
-  }
-
--- | Игровая вселенная
-data Universe = Universe
-  { universeMap        :: Map    -- ^ Препятствия игровой вселенной
-  , universeCow        :: Cow    -- ^ Корова
-  , universeScore      :: Score  -- ^ Cчет
-  , universeLife       :: Life   -- ^ Жизни
-  , universeStop       :: Bool   -- ^ Флаг остановки игры
-  , universeGameOver   :: Bool   -- ^ Флаг окончания игры
-  , universeBackground :: Background
-  -- , universeCowBonus   :: Bonus
-  , universeMode       :: Mode
-  , universeBoss       :: Boss   -- ^ Босс
-  }
-
--- | Изображения объектов
+-- | Изображения объектов игровой вселенной
 data Images = Images
-  { imageCow             :: Picture   -- ^ Изображение коровы.
-  , imageCowBlurred      :: Picture   -- ^ Изображение размытой коровы.
+  { imageCow             :: Picture   -- ^ Изображение коровы
+  , imageCowBlurred      :: Picture   -- ^ Изображение размытой коровы
   , imageClover          :: Picture   -- ^ Изображение клевера
+<<<<<<< HEAD
   , imageGoodBirdUp      :: Picture   -- ^ Изображение GrayBirdUp.
   , imageGoodBirdDown    :: Picture   -- ^ Изображение GrayBirdDown.
   , imageBadBirdUp       :: Picture   -- ^ Изображение BlueBirdUp.
@@ -277,3 +187,18 @@ instance Obstacle Stone where
   getWidth _ = 120
 
   getHeight _ = 80
+=======
+  , imageGoodBirdUp      :: Picture   -- ^ Изображение Хорошей птички 
+  , imageGoodBirdDown    :: Picture   -- ^ Изображение Хорошей птички 2
+  , imageBadBirdUp       :: Picture   -- ^ Изображение Плохой птички
+  , imageBadBirdDown     :: Picture   -- ^ Изображение Плохой птички
+  , imageSkyWithGrass    :: Picture   -- ^ Изображение Неба
+  , imageGameOver        :: Picture   -- ^ Изображение конца игры
+  , imageDonut           :: Picture   -- ^ Изображение пончика
+  , imageDonutStar       :: Picture   -- ^ Изображение бонуса, пончикового бластера
+  , imageFasterStar      :: Picture   -- ^ Изображение бонуса, ускорителя
+  , imageInvincibleStar  :: Picture   -- ^ Изображение бонуса, неуязвимости
+  , imageRandomStar      :: Picture   -- ^ Изображение случайного бонуса
+  , imageEnlargeStar     :: Picture   -- ^ Изображение бонуса, увеличения
+  }
+>>>>>>> LevelGeneration
